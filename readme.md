@@ -1,0 +1,1 @@
+Example: python main.py --test_n=50 --k=256 --prompt=8 -r -c -f -v

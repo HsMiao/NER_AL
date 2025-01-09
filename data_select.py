@@ -7,11 +7,11 @@ from utils import _fast_vote_k, get_responces
 data_path = 'data/'
 result_path = 'results/'
 
-def cluster(k):
+def cluster(k, seed):
     df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
-    kmeans = KMeans(n_clusters=k, init="k-means++", random_state=42)
+    kmeans = KMeans(n_clusters=k, init="k-means++", random_state=seed)
     kmeans.fit(matrix)
     # for each center, find the closest embeddings by cosine similarity
     closest = []
@@ -32,14 +32,14 @@ def fast_vote_k(k):
     df_selected.to_csv(result_path+f"fast_vote_{k}.csv", index=False)
     return df_selected
 
-def vote_k(k):
+def vote_k(k, seed):
     df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     df_selected_1 = df.iloc[_fast_vote_k(matrix, k//10, k, "vote_stat.json")]
     # get the remaining rows
     df_remaining = df[~df.index.isin(df_selected_1.index)]
-    df = get_responces(df_selected_1, df_remaining)
+    df = get_responces(df_selected_1, df_remaining, seed)
     df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
     df.to_csv(result_path+f"responce_{k}.csv", index=False)
 
@@ -53,8 +53,8 @@ def vote_k(k):
     df_selected.to_csv(result_path+f"vote_{k}.csv", index=False)
     return df_selected
 
-def random_select(k):
+def random_select(k, rng):
     df = pd.read_csv(data_path+'train.csv')
-    df_selected = df.sample(k)
+    df_selected = df.sample(k, random_state=rng)
     df_selected.to_csv(result_path+f"random_{k}.csv", index=False)
     return df_selected

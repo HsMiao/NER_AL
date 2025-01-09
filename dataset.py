@@ -153,7 +153,7 @@ def generate_data():
     dev_data_processed.to_csv(data_path+'dev_data.csv', index=False)
     test_data_processed.to_csv(data_path+'test_data.csv', index=False)
 
-def select_test(num):
+def select_test(num, rng):
     test_data = pd.read_csv(data_path+'test_data.csv')
-    test_data_selected = test_data.sample(n=num)
+    test_data_selected = test_data.sample(n=num, random_state=rng)
     test_data_selected.to_csv(data_path+f'test_data_{num}.csv', index=False)

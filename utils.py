@@ -4,7 +4,6 @@ import pandas as pd
 import os
 import json
 from openai import OpenAI
-from prompt_toolkit import prompt
 from tqdm import tqdm
 from collections import defaultdict
 from sklearn.metrics.pairwise import cosine_similarity
@@ -87,7 +86,7 @@ def avg_logprob(logprobs):
         count += 1
     return avg / count
 
-def test_sent(sys_prompt, text, model="gpt-4o-mini"):
+def test_sent(sys_prompt, text, seed, model="gpt-4o-mini"):
     client = OpenAI()
     # get the completion and logprobs
     completion = client.chat.completions.create(
@@ -96,15 +95,16 @@ def test_sent(sys_prompt, text, model="gpt-4o-mini"):
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_prompt.format(text)},
         ],
-        logprobs=True
+        logprobs=True,
+        seed=seed
     )
     # return the completion and logprob
     message = completion.choices[0].message.content
     avg_lp = avg_logprob(completion.choices[0].logprobs)
     return message, avg_lp
 
-def get_responces(demo_df, test_df, model="gpt-4o-mini"):
+def get_responces(demo_df, test_df, seed, model="gpt-4o-mini"):
     # No prompt retrieval
     sys_prompt = complete_prompt(demo_df)
-    test_df[['responce', 'logprobs']] = test_df['text'].apply(lambda x: test_sent(sys_prompt, x, model)).apply(pd.Series)
+    test_df[['responce', 'logprobs']] = test_df['text'].apply(lambda x: test_sent(sys_prompt, x, seed, model)).apply(pd.Series)
     return test_df

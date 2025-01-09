@@ -14,8 +14,8 @@ def similarity_retrieve(embed, df, num=8):
     sorted_indices = np.argsort(sim).tolist()[-num:]
     return df.iloc[sorted_indices]
 
-def random_retrieve(embed, df, num=8):
-    df = df.sample(num)
+def random_retrieve(embed, df, rng, num=8):
+    df = df.sample(num, random_state=rng)
     matrix = np.vstack(df.embedding.values)
     # get the similarity between the input embedding and the embeddings in the file
     sim = cosine_similarity(matrix, embed.reshape(1, -1)).flatten()
@@ -24,20 +24,22 @@ def random_retrieve(embed, df, num=8):
     df = df.sort_values('similarity')
     return df.drop(columns='similarity')
 
-def eval_row(row, sel_df, num=8, use_random=False, model="gpt-4o-mini"):
+def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-mini"):
     if use_random:
-        tmp_df = random_retrieve(row.embedding, sel_df, num)
+        if rng is None:
+            raise ValueError("Random retrieval requires a random state.")
+        tmp_df = random_retrieve(row.embedding, sel_df, rng, num)
     else:
         tmp_df = similarity_retrieve(row.embedding, sel_df, num)
     sys_prompt = complete_prompt(tmp_df)
-    return test_sent(sys_prompt, row.text, model)
+    return test_sent(sys_prompt, row.text, seed, model)
 
-def evaluate(sel_file, test_file, few_shot_num=8, use_random=False, model="gpt-4o-mini"):
+def evaluate(sel_file, test_file, rng=None, few_shot_num=8, use_random=False, seed = 42, model="gpt-4o-mini"):
     test_df = pd.read_csv(test_file)
     test_df['embedding'] = test_df['embedding'].apply(eval).apply(np.array)
     sel_df = pd.read_csv(sel_file)
     sel_df['embedding'] = sel_df['embedding'].apply(eval).apply(np.array)
-    test_df[['responce', 'logprobs']] = test_df.apply(lambda row: eval_row(row, sel_df, few_shot_num, use_random, model), axis=1).apply(pd.Series)
+    test_df[['responce', 'logprobs']] = test_df.apply(lambda row: eval_row(row, sel_df, rng, few_shot_num, use_random, model, seed=seed), axis=1).apply(pd.Series)
     return test_df
     
 def tokenwise_accuracy(y_true, y_pred):

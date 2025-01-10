@@ -32,14 +32,14 @@ def fast_vote_k(k):
     df_selected.to_csv(result_path+f"fast_vote_{k}.csv", index=False)
     return df_selected
 
-def vote_k(k, seed):
+def vote_k(k, seed, model="gpt-4o-mini", together=False):
     df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     df_selected_1 = df.iloc[_fast_vote_k(matrix, k//10, k, "vote_stat.json")]
     # get the remaining rows
     df_remaining = df[~df.index.isin(df_selected_1.index)]
-    df = get_responces(df_selected_1, df_remaining, seed)
+    df = get_responces(df_selected_1, df_remaining, seed, model, together)
     df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
     df.to_csv(result_path+f"responce_{k}.csv", index=False)
 

@@ -86,8 +86,14 @@ def avg_logprob(logprobs):
         count += 1
     return avg / count
 
-def test_sent(sys_prompt, text, seed, model="gpt-4o-mini"):
-    client = OpenAI()
+def test_sent(sys_prompt, text, seed, model="gpt-4o-mini", together=False):
+    if together:
+        client = OpenAI(
+        api_key = os.environ.get("TOGETHER_API_KEY"),
+        base_url="https://api.together.xyz/v1",
+        )    
+    else:
+        client = OpenAI()
     # get the completion and logprobs
     completion = client.chat.completions.create(
         model=model,
@@ -103,8 +109,8 @@ def test_sent(sys_prompt, text, seed, model="gpt-4o-mini"):
     avg_lp = avg_logprob(completion.choices[0].logprobs)
     return message, avg_lp
 
-def get_responces(demo_df, test_df, seed, model="gpt-4o-mini"):
+def get_responces(demo_df, test_df, seed, model="gpt-4o-mini", together=False):
     # No prompt retrieval
     sys_prompt = complete_prompt(demo_df)
-    test_df[['responce', 'logprobs']] = test_df['text'].apply(lambda x: test_sent(sys_prompt, x, seed, model)).apply(pd.Series)
+    test_df[['responce', 'logprobs']] = test_df['text'].apply(lambda x: test_sent(sys_prompt, x, seed, model, together=together)).apply(pd.Series)
     return test_df

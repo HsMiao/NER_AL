@@ -24,7 +24,7 @@ def random_retrieve(embed, df, rng, num=8):
     df = df.sort_values('similarity')
     return df.drop(columns='similarity')
 
-def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-mini"):
+def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-mini", together=False):
     if use_random:
         if rng is None:
             raise ValueError("Random retrieval requires a random state.")
@@ -32,14 +32,14 @@ def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-m
     else:
         tmp_df = similarity_retrieve(row.embedding, sel_df, num)
     sys_prompt = complete_prompt(tmp_df)
-    return test_sent(sys_prompt, row.text, seed, model)
+    return test_sent(sys_prompt, row.text, seed, model, together)
 
-def evaluate(sel_file, test_file, rng=None, few_shot_num=8, use_random=False, seed = 42, model="gpt-4o-mini"):
+def evaluate(sel_file, test_file, rng=None, few_shot_num=8, use_random=False, seed=42, model="gpt-4o-mini", together=False):
     test_df = pd.read_csv(test_file)
     test_df['embedding'] = test_df['embedding'].apply(eval).apply(np.array)
     sel_df = pd.read_csv(sel_file)
     sel_df['embedding'] = sel_df['embedding'].apply(eval).apply(np.array)
-    test_df[['responce', 'logprobs']] = test_df.apply(lambda row: eval_row(row, sel_df, rng, few_shot_num, use_random, model, seed=seed), axis=1).apply(pd.Series)
+    test_df[['responce', 'logprobs']] = test_df.apply(lambda row: eval_row(row, sel_df, rng, few_shot_num, use_random, model, seed=seed, together=together), axis=1).apply(pd.Series)
     return test_df
     
 def tokenwise_accuracy(y_true, y_pred):

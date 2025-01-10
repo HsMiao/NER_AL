@@ -78,4 +78,16 @@
 
 - Description: Random seed to ensure reproducibility of experiments.
 
+11. --together (-t)
+
+- Type: Boolean flag (no value required)
+- Default: False
+- Description: If enabled, uses Together's API.
+
+12. --model 
+
+- Type: string
+- Default: "gpt-4o-mini"
+- Description: Name of LLM.
+
 **Example: python main.py --test_n=50 --k=256 --prompt=8 -r -c -f -v**

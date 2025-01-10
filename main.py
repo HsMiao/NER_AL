@@ -11,17 +11,17 @@ from data_select import cluster, fast_vote_k, vote_k, random_select
 data_path = 'data/'
 result_path = 'results/'
 
-def retrieve(k, prompt_n = 8, test_n=None, methods=['cluster', 'fast_vote', 'vote', 'random'], flag=None, rng = None, seed=42):
+def retrieve(k, prompt_n = 8, test_n=None, methods=['cluster', 'fast_vote', 'vote', 'random'], flag=None, rng = None, seed=42, model="gpt-4o-mini", together=False):
     test_file = data_path + (f"test_{test_n}.csv" if test_n is not None else "test.csv")
     for method in methods:
         if flag is None:
             for flag in [0, 1]:
-                df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, "gpt-4o-mini", seed=seed)
+                df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together)
                 ret = "random" if flag else "similarity"
                 df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
                 df.to_csv(result_path+f"{method}_{k}_{ret}_eval.csv", index=False)
         else:
-            df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, "gpt-4o-mini", seed=seed)
+            df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together)
             ret = "random" if flag else "similarity"
             df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
             df.to_csv(result_path+f"{method}_{k}_{ret}_eval.csv", index=False)
@@ -83,6 +83,8 @@ def main():
     argparser.add_argument("--test_n", type=int, default=None, help="Dataset size for testing")
     argparser.add_argument("--k", type=int, default=256, help="Number of samples to select")
     argparser.add_argument("--prompt", type=int, default=8, help="Number of prompts")
+    argparser.add_argument("--together", '-t', action='store_true', help="Use together API")
+    argparser.add_argument("--model", type=str, default='gpt-4o-mini', help="Model name")
     argparser.add_argument("--random", '-r', action='store_true', help="Randomly select k samples")
     argparser.add_argument("--cluster", '-c', action='store_true', help="Select k samples by clustering")
     argparser.add_argument("--fast_vote", '-f', action='store_true', help="Select k samples by fast vote k")
@@ -108,14 +110,14 @@ def main():
         fast_vote_k(args.k)
         methods.append('fast_vote')
     if args.vote:
-        vote_k(args.k, args.seed)
+        vote_k(args.k, args.seed, args.model, args.together)
         methods.append('vote')
     if not args.random_retrieval:
-        retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed)
+        retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed, model=args.model, together=args.together)
     else:
-        retrieve(args.k, args.prompt, args.test_n, methods, 1, rng, seed=args.seed)
+        retrieve(args.k, args.prompt, args.test_n, methods, 1, rng, seed=args.seed, model=args.model, together=args.together)
         if args.similarity_retrieval:
-            retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed)
+            retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed, model=args.model, together=args.together)
     report(args.k, args.test_n, methods)
     plot(args.k, args.test_n)
 if __name__ == "__main__":

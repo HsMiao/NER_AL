@@ -26,7 +26,7 @@ def _fast_vote_k(embeddings, select_num, k, vote_file=None):
             bar.update(1)
         if vote_file is not None:
             with open(vote_file,'w') as f:
-                json.dump(vote_stat,f)
+                json.dump(vote_stat, f)
     votes = sorted(vote_stat.items(), key=lambda x:len(x[1]), reverse=True)
     selected_indices = []
     selected_times = defaultdict(int)
@@ -78,12 +78,17 @@ def complete_prompt(demo_df):
         prompt += f"Output: {json.dumps(get_label(row))}\n"
     return prompt
 
-def avg_logprob(logprobs):
+def avg_logprob(logprobs, together=False):
     avg = 0
     count = 0
-    for d in logprobs.content:
-        avg += d.logprob
-        count += 1
+    if together:
+        for d in logprobs.token_logprobs:
+            avg += d
+            count += 1
+    else:
+        for d in logprobs.content:
+            avg += d.logprob
+            count += 1
     return avg / count
 
 def test_sent(sys_prompt, text, seed, model="gpt-4o-mini", together=False):
@@ -106,7 +111,7 @@ def test_sent(sys_prompt, text, seed, model="gpt-4o-mini", together=False):
     )
     # return the completion and logprob
     message = completion.choices[0].message.content
-    avg_lp = avg_logprob(completion.choices[0].logprobs)
+    avg_lp = avg_logprob(completion.choices[0].logprobs, together)
     return message, avg_lp
 
 def get_responces(demo_df, test_df, seed, model="gpt-4o-mini", together=False):

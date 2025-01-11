@@ -90,4 +90,4 @@
 - Default: "gpt-4o-mini"
 - Description: Name of LLM.
 
-**Example: python main.py --test_n=50 --k=256 --prompt=8 -r -c -f -v**
+**Example: python main.py --test_n=50 --k=256 --prompt=8 -r -c -f -v -rr -sr**

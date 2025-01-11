@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -5,10 +6,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from utils import _fast_vote_k, get_responces
 
 data_path = 'data/'
-result_path = 'results/'
+# result_path = 'results/'
 
-def cluster(k, seed):
-    df = pd.read_csv(data_path+'train.csv')
+def cluster(k, seed, result_path='results/'):
+    if os.path.exists(result_path+f"cluster_{k}.csv"):
+        return pd.read_csv(result_path+f"cluster_{k}.csv")
+    df = pd.read_csv(data_path+'train_data.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     kmeans = KMeans(n_clusters=k, init="k-means++", random_state=seed)
@@ -23,20 +26,24 @@ def cluster(k, seed):
     df_closest.to_csv(result_path+f"cluster_{k}.csv", index=False)
     return df_closest
 
-def fast_vote_k(k):
-    df = pd.read_csv(data_path+'train.csv')
+def fast_vote_k(k, result_path='results/'):
+    if os.path.exists(result_path+f"fast_vote_{k}.csv"):
+        return pd.read_csv(result_path+f"fast_vote_{k}.csv")
+    df = pd.read_csv(data_path+'train_data.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
-    df_selected = df.iloc[_fast_vote_k(matrix, k, k, "vote_stat.json")]
+    df_selected = df.iloc[_fast_vote_k(matrix, k, k, vote_file=result_path+"vote_stat.json")]
     df_selected['embedding'] = df_selected['embedding'].apply(lambda x: str(x.tolist()))
     df_selected.to_csv(result_path+f"fast_vote_{k}.csv", index=False)
     return df_selected
 
-def vote_k(k, seed, model="gpt-4o-mini", together=False):
-    df = pd.read_csv(data_path+'train.csv')
+def vote_k(k, seed, model="gpt-4o-mini", together=False, result_path='results/'):
+    if os.path.exists(result_path+f"vote_{k}.csv"):
+        return pd.read_csv(result_path+f"vote_{k}.csv")
+    df = pd.read_csv(data_path+'train_data.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
-    df_selected_1 = df.iloc[_fast_vote_k(matrix, k//10, k, "vote_stat.json")]
+    df_selected_1 = df.iloc[_fast_vote_k(matrix, k//10, k, result_path+"vote_stat.json")]
     # get the remaining rows
     df_remaining = df[~df.index.isin(df_selected_1.index)]
     df = get_responces(df_selected_1, df_remaining, seed, model, together)
@@ -53,8 +60,10 @@ def vote_k(k, seed, model="gpt-4o-mini", together=False):
     df_selected.to_csv(result_path+f"vote_{k}.csv", index=False)
     return df_selected
 
-def random_select(k, rng):
-    df = pd.read_csv(data_path+'train.csv')
+def random_select(k, rng, result_path='results/'):
+    if os.path.exists(result_path+f"random_{k}.csv"):
+        return pd.read_csv(result_path+f"random_{k}.csv")
+    df = pd.read_csv(data_path+'train_data.csv')
     df_selected = df.sample(k, random_state=rng)
     df_selected.to_csv(result_path+f"random_{k}.csv", index=False)
     return df_selected

@@ -90,4 +90,10 @@
 - Default: "gpt-4o-mini"
 - Description: Name of LLM.
 
+13. --data (-d)
+    
+- Type: Boolean flag (no value required)
+- Default: False
+- Description: If enabled, generates data.
+
 **Example: python main.py --test_n=50 --k=256 --prompt=8 -r -c -f -v -rr -sr**

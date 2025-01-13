@@ -149,11 +149,11 @@ def generate_data():
     train_data_processed = process_data(train_data_raw)
     dev_data_processed = process_data(dev_data_raw)
     test_data_processed = process_data(test_data_raw)
-    train_data_processed.to_csv(data_path+'train_data.csv', index=False)
-    dev_data_processed.to_csv(data_path+'dev_data.csv', index=False)
-    test_data_processed.to_csv(data_path+'test_data.csv', index=False)
+    train_data_processed.to_csv(data_path+'train.csv', index=False)
+    dev_data_processed.to_csv(data_path+'dev.csv', index=False)
+    test_data_processed.to_csv(data_path+'test.csv', index=False)
 
 def select_test(num, rng):
-    test_data = pd.read_csv(data_path+'test_data.csv')
+    test_data = pd.read_csv(data_path+'test.csv')
     test_data_selected = test_data.sample(n=num, random_state=rng)
-    test_data_selected.to_csv(data_path+f'test_data_{num}.csv', index=False)
+    test_data_selected.to_csv(data_path+f'test_{num}.csv', index=False)

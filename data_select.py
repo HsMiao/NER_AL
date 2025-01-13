@@ -11,7 +11,7 @@ data_path = 'data/'
 def cluster(k, seed, result_path='results/'):
     if os.path.exists(result_path+f"cluster_{k}.csv"):
         return pd.read_csv(result_path+f"cluster_{k}.csv")
-    df = pd.read_csv(data_path+'train_data.csv')
+    df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     kmeans = KMeans(n_clusters=k, init="k-means++", random_state=seed)
@@ -29,7 +29,7 @@ def cluster(k, seed, result_path='results/'):
 def fast_vote_k(k, result_path='results/'):
     if os.path.exists(result_path+f"fast_vote_{k}.csv"):
         return pd.read_csv(result_path+f"fast_vote_{k}.csv")
-    df = pd.read_csv(data_path+'train_data.csv')
+    df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     df_selected = df.iloc[_fast_vote_k(matrix, k, k, vote_file=result_path+"vote_stat.json")]
@@ -40,21 +40,23 @@ def fast_vote_k(k, result_path='results/'):
 def vote_k(k, seed, model="gpt-4o-mini", together=False, result_path='results/'):
     if os.path.exists(result_path+f"vote_{k}.csv"):
         return pd.read_csv(result_path+f"vote_{k}.csv")
-    df = pd.read_csv(data_path+'train_data.csv')
+    df = pd.read_csv(data_path+'train.csv')
     df['embedding'] = df['embedding'].apply(eval).apply(np.array)
     matrix = np.vstack(df.embedding.values)
     df_selected_1 = df.iloc[_fast_vote_k(matrix, k//10, k, result_path+"vote_stat.json")]
     # get the remaining rows
     df_remaining = df[~df.index.isin(df_selected_1.index)]
-    df = get_responces(df_selected_1, df_remaining, seed, model, together)
-    df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
-    df.to_csv(result_path+f"responce_{k}.csv", index=False)
-
+    if not os.path.exists(result_path+f"responce_{k}.csv"):
+        df = get_responces(df_selected_1, df_remaining, seed, model, together)
+        df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
+        df.to_csv(result_path+f"responce_{k}.csv", index=False)
+    else:
+        df = pd.read_csv(result_path+f"responce_{k}.csv")
     # sort by logprobs and form k bins
     df['bin'] = pd.qcut(df.logprobs, k, labels=[i for i in range(k)])
     df = df[df['bin'] < k - k//10] # remove the last bins
     # for each bin, select the row with the highest logprob
-    df_selected_2 = df.loc[df.groupby('bin', observed=True)['logprobs'].idxmax()].drop(columns=['bin', 'response', 'logprobs'])
+    df_selected_2 = df.loc[df.groupby('bin', observed=True)['logprobs'].idxmax()].drop(columns=['bin', 'responce', 'logprobs'])
     df_selected_1['embedding'] = df_selected_1['embedding'].apply(lambda x: str(x.tolist()))
     df_selected = pd.concat([df_selected_1, df_selected_2])
     df_selected.to_csv(result_path+f"vote_{k}.csv", index=False)
@@ -63,7 +65,7 @@ def vote_k(k, seed, model="gpt-4o-mini", together=False, result_path='results/')
 def random_select(k, rng, result_path='results/'):
     if os.path.exists(result_path+f"random_{k}.csv"):
         return pd.read_csv(result_path+f"random_{k}.csv")
-    df = pd.read_csv(data_path+'train_data.csv')
+    df = pd.read_csv(data_path+'train.csv')
     df_selected = df.sample(k, random_state=rng)
     df_selected.to_csv(result_path+f"random_{k}.csv", index=False)
     return df_selected

@@ -17,17 +17,25 @@ def retrieve(k, prompt_n=8, test_n=None, methods=['cluster', 'fast_vote', 'vote'
     for method in methods:
         if flag is None:
             for flag in [0, 1]:
-                df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together, rng=rng)
                 ret = "random" if flag else "similarity"
+                print(f"Retrieving {method} {k} {ret}")
+                if os.path.exists(result_path+f"{method}_{k}_{ret}_eval.csv"):
+                    continue
+                df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together, rng=rng)
                 df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
                 df.to_csv(result_path+f"{method}_{k}_{ret}_eval.csv", index=False)
         else:
-            df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together, rng=rng)
             ret = "random" if flag else "similarity"
+            print(f"Retrieving {method} {k} {ret}")
+            if os.path.exists(result_path+f"{method}_{k}_{ret}_eval.csv"):
+                continue
+            df = evaluate(result_path+f"{method}_{k}.csv", test_file, prompt_n, flag, model=model, seed=seed, together=together, rng=rng)
             df['embedding'] = df['embedding'].apply(lambda x: str(x.tolist()))
             df.to_csv(result_path+f"{method}_{k}_{ret}_eval.csv", index=False)
 
 def report(k, test_n=None, methods=['cluster', 'fast_vote', 'vote', 'random'], result_path='results/'):
+    if test_n is None:
+        test_n = 'all'
     result_df = []
     for method in methods:
         for flag in [0, 1]:
@@ -43,6 +51,8 @@ def report(k, test_n=None, methods=['cluster', 'fast_vote', 'vote', 'random'], r
     result_df.to_csv(result_path+f"result_{k}_{test_n}.csv", index=False)
 
 def plot(k, test_n=None, result_path='results/'):
+    if test_n is None:
+        test_n = 'all'
     df = pd.read_csv(result_path+f"result_{k}_{test_n}.csv")
     df1 = df[df['retrieval'] == 'random']
     df2 = df[df['retrieval'] == 'similarity']
@@ -100,7 +110,7 @@ def main():
     rng = np.random.default_rng(args.seed)
     result_path = f'results/{args.model}/'
     os.makedirs(result_path, exist_ok=True)
-    if args.data:
+    if args.data or os.path.exists(data_path) == False:
         generate_data()
     methods = []
     if args.test_n is not None:
@@ -122,11 +132,11 @@ def main():
         vote_k(args.k, args.seed, args.model, args.together, result_path=result_path)
         methods.append('vote')
     if not args.random_retrieval:
-        retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
+        retrieve(args.k, args.prompt, args.test_n, methods, False, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
     else:
-        retrieve(args.k, args.prompt, args.test_n, methods, 1, rng, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
+        retrieve(args.k, args.prompt, args.test_n, methods, True, rng, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
         if args.similarity_retrieval:
-            retrieve(args.k, args.prompt, args.test_n, methods, 0, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
+            retrieve(args.k, args.prompt, args.test_n, methods, False, seed=args.seed, model=args.model, together=args.together, result_path=result_path)
     report(args.k, args.test_n, methods, result_path)
     plot(args.k, args.test_n, result_path)
 if __name__ == "__main__":

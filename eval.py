@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 import numpy as np
-from copy import deepcopy
+from json.decoder import JSONDecodeError
 from collections import Counter, defaultdict
 from utils import test_sent, complete_prompt
 from sklearn.metrics.pairwise import cosine_similarity
@@ -24,7 +24,7 @@ def random_retrieve(embed, df, rng, num=8):
     df = df.sort_values('similarity')
     return df.drop(columns='similarity')
 
-def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-mini", together=False):
+def eval_row(row, sel_df, rng, num=8, use_random=False, model="gpt-4o-mini", together=False, seed=42):
     if use_random:
         if rng is None:
             raise ValueError("Random retrieval requires a random state.")
@@ -34,7 +34,7 @@ def eval_row(row, sel_df, rng, num=8, use_random=False, seed=42, model="gpt-4o-m
     sys_prompt = complete_prompt(tmp_df)
     return test_sent(sys_prompt, row.text, seed, model, together)
 
-def evaluate(sel_file, test_file, rng=None, few_shot_num=8, use_random=False, seed=42, model="gpt-4o-mini", together=False):
+def evaluate(sel_file, test_file, few_shot_num=8, use_random=False, seed=42, model="gpt-4o-mini", together=False, rng=None):
     test_df = pd.read_csv(test_file)
     test_df['embedding'] = test_df['embedding'].apply(eval).apply(np.array)
     sel_df = pd.read_csv(sel_file)
@@ -175,8 +175,10 @@ def get_results(gold_data, pred_path, entity_types=['Disease'], verbose=False, r
         sen_id = pred_item['id']
         sen_str = pred_item['text']
         sen_str_full = ' '.join(pred_item['tokens_org_full']) if 'tokens_org_full' in pred_item else sen_str
-        pred_entities = json.loads(pred_item['responce'])['named entities']
-        
+        try:
+            pred_entities = json.loads(pred_item['responce'])['named entities']
+        except JSONDecodeError:
+            pred_entities = []
         pred_entities = [item for item in pred_entities if item['name'] in sen_str]
         pred_entities = entity_index(pred_entities, eval(pred_item['tokens']))
         if not (pred_entities) or (pred_entities and 'token_idx' in pred_entities[0]):
